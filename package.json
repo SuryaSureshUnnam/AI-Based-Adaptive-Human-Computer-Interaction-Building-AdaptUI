@@ -1,0 +1,15 @@
+{
+  "name": "adaptui-msai631",
+  "version": "1.0.0",
+  "description": "AI-powered adaptive user interface prototype for MSAI-631 – AI for HCI, University of the Cumberlands, Spring 2026.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "lint": "npx eslint src/"
+  },
+  "files": ["index.html", "src/", "README.md"],
+  "keywords": ["adaptive-ui", "intelligent-user-interface", "HCI", "AI", "anthropic", "claude"],
+  "author": "[Student Name]",
+  "license": "MIT",
+  "engines": { "node": ">=18.0.0" }
+}

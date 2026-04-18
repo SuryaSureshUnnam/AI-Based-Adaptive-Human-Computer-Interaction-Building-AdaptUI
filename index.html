@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AdaptUI – AI-Powered Adaptive Interface</title>
+  <style>
+    /* ── CSS custom properties – theme engine ─────────────────────────── */
+    :root {
+      --bg:        #f5f7fa;
+      --surface:   #ffffff;
+      --primary:   #4f46e5;
+      --primary-d: #3730a3;
+      --text:      #1e293b;
+      --sub:       #64748b;
+      --border:    #e2e8f0;
+      --radius:    12px;
+      --font-size: 15px;
+      --spacing:   1rem;
+      --transition: 0.35s ease;
+    }
+
+    /* Dark mode */
+    body.dark {
+      --bg:      #0f172a;
+      --surface: #1e293b;
+      --text:    #f1f5f9;
+      --sub:     #94a3b8;
+      --border:  #334155;
+    }
+
+    /* High-contrast mode */
+    body.high-contrast {
+      --bg:      #000;
+      --surface: #111;
+      --primary: #ffdd00;
+      --text:    #fff;
+      --sub:     #ccc;
+      --border:  #ffdd00;
+    }
+
+    /* Large-text mode */
+    body.large-text { --font-size: 18px; --spacing: 1.4rem; }
+
+    /* ── Reset & base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: var(--font-size);
+      background: var(--bg);
+      color: var(--text);
+      transition: background var(--transition), color var(--transition);
+      min-height: 100vh;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────────── */
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ─────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--spacing);
+      transition: background var(--transition), border var(--transition);
+    }
+
+    /* ── Header ───────────────────────────────────────────────────────── */
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .brand { display: flex; align-items: center; gap: .6rem; }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: grid; place-items: center;
+      color: #fff; font-size: 1.2rem;
+    }
+    .brand h1 { font-size: 1.25rem; }
+    .brand p  { font-size: .8rem; color: var(--sub); }
+
+    .badge {
+      background: var(--primary);
+      color: #fff;
+      font-size: .7rem;
+      padding: .2rem .55rem;
+      border-radius: 999px;
+      margin-left: .4rem;
+    }
+    .badge.green { background: #10b981; }
+    .badge.yellow { background: #f59e0b; color: #000; }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────── */
+    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+    .sidebar h3 {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--sub);
+      margin-bottom: .4rem;
+    }
+
+    /* Behavior profile */
+    .profile-ring {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 4px solid var(--primary);
+      display: grid; place-items: center;
+      margin: 0 auto .5rem;
+      font-size: 1.8rem;
+    }
+    .profile-label {
+      text-align: center;
+      font-size: .9rem;
+      font-weight: 600;
+    }
+    .profile-sub {
+      text-align: center;
+      font-size: .75rem;
+      color: var(--sub);
+      margin-top: .2rem;
+    }
+
+    /* Stat bars */
+    .stat { margin: .4rem 0; }
+    .stat-header { display: flex; justify-content: space-between; font-size: .78rem; color: var(--sub); margin-bottom: .25rem; }
+    .bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .6s ease; }
+
+    /* Toggles */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .3rem 0;
+      font-size: .85rem;
+    }
+    .toggle {
+      position: relative; width: 40px; height: 22px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: .3s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .3s;
+    }
+    .toggle input:checked + .slider { background: var(--primary); }
+    .toggle input:checked + .slider::before { transform: translateX(18px); }
+
+    /* ── Main area ────────────────────────────────────────────────────── */
+    .main { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .tab-btn {
+      padding: .45rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: .85rem;
+      color: var(--sub);
+      transition: .2s;
+    }
+    .tab-btn:hover  { border-color: var(--primary); color: var(--primary); }
+    .tab-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Chat */
+    .chat-box {
+      height: 340px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      padding: .5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+    }
+    .msg {
+      max-width: 80%;
+      padding: .55rem .85rem;
+      border-radius: var(--radius);
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: var(--primary);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.ai {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg.ai .typing { display: inline-block; }
+    .msg.ai .typing span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      margin: 0 1px;
+      background: var(--sub);
+      border-radius: 50%;
+      animation: blink 1.2s infinite;
+    }
+    .msg.ai .typing span:nth-child(2) { animation-delay: .2s; }
+    .msg.ai .typing span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+
+    .chat-input-row {
+      display: flex;
+      gap: .5rem;
+      margin-top: .5rem;
+    }
+    .chat-input-row input {
+      flex: 1;
+      padding: .6rem .9rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font-size: .88rem;
+      outline: none;
+      transition: border .2s;
+    }
+    .chat-input-row input:focus { border-color: var(--primary); }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: .6rem 1.2rem;
+      cursor: pointer;
+      font-size: .88rem;
+      font-weight: 600;
+      transition: background .2s;
+    }
+    button.primary:hover { background: var(--primary-d); }
+    button.primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Dashboard grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .75rem;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .9rem;
+      text-align: center;
+    }
+    .kpi-value { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+    .kpi-label { font-size: .72rem; color: var(--sub); margin-top: .2rem; }
+
+    /* Adaptive suggestions */
+    .suggestion {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      padding: .65rem .9rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      transition: border .2s, transform .15s;
+      font-size: .85rem;
+    }
+    .suggestion:hover { border-color: var(--primary); transform: translateX(3px); }
+    .suggestion-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .05rem; }
+    .suggestion-title { font-weight: 600; margin-bottom: .1rem; }
+    .suggestion-desc  { color: var(--sub); font-size: .8rem; }
+
+    /* Notification */
+    #notif {
+      position: fixed;
+      bottom: 1.5rem; right: 1.5rem;
+      background: var(--primary);
+      color: #fff;
+      padding: .75rem 1.2rem;
+      border-radius: var(--radius);
+      font-size: .85rem;
+      display: none;
+      animation: slideUp .3s ease;
+      z-index: 999;
+    }
+    @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+    /* Scroll bar */
+    .chat-box::-webkit-scrollbar { width: 4px; }
+    .chat-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🧠</div>
+      <div>
+        <h1>AdaptUI <span class="badge green">LIVE</span></h1>
+        <p>AI-Powered Adaptive Interface · MSAI-631</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <span id="profile-badge" class="badge yellow">Novice User</span>
+      <span id="session-time" style="font-size:.78rem;color:var(--sub)">Session: 0s</span>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <div class="card">
+      <h3>Behavior Profile</h3>
+      <div class="profile-ring" id="profile-emoji">🌱</div>
+      <div class="profile-label" id="profile-name">Novice</div>
+      <div class="profile-sub" id="profile-desc">Building your profile…</div>
+    </div>
+
+    <div class="card">
+      <h3>Engagement Metrics</h3>
+      <div class="stat">
+        <div class="stat-header"><span>Click Activity</span><span id="click-pct">0%</span></div>
+        <div class="bar"><div class="bar-fill" id="click-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat">
+        <div class="stat-header"><span>Chat Usage</span><span id="chat-pct">0%</span></div>
+        <div class="bar"><div class="bar-fill" id="chat-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat">
+        <div class="stat-header"><span>Tab Switching</span><span id="tab-pct">0%</span></div>
+        <div class="bar"><div class="bar-fill" id="tab-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat">
+        <div class="stat-header"><span>Scroll Depth</span><span id="scroll-pct">0%</span></div>
+        <div class="bar"><div class="bar-fill" id="scroll-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Accessibility Overrides</h3>
+      <div class="toggle-row">
+        Dark Mode
+        <label class="toggle"><input type="checkbox" id="tog-dark" onchange="toggleDark()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        High Contrast
+        <label class="toggle"><input type="checkbox" id="tog-hc" onchange="toggleHC()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        Large Text
+        <label class="toggle"><input type="checkbox" id="tog-lt" onchange="toggleLT()"><span class="slider"></span></label>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Tabs -->
+    <div class="card" style="padding:.6rem .8rem;">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('chat',this)">💬 AI Chat</button>
+        <button class="tab-btn" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+        <button class="tab-btn" onclick="switchTab('suggestions',this)">✨ AI Suggestions</button>
+        <button class="tab-btn" onclick="switchTab('about',this)">ℹ️ About</button>
+      </div>
+    </div>
+
+    <!-- Chat tab -->
+    <div class="card tab-panel active" id="tab-chat">
+      <h3 style="margin-bottom:.6rem;font-size:.85rem;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Adaptive AI Assistant</h3>
+      <div class="chat-box" id="chat-box"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')sendChat()" />
+        <button class="primary" id="send-btn" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+
+    <!-- Dashboard tab -->
+    <div class="card tab-panel" id="tab-dashboard">
+      <h3 style="margin-bottom:.8rem;font-size:.85rem;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">Live Interaction Dashboard</h3>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-value" id="kpi-clicks">0</div><div class="kpi-label">Total Clicks</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpi-messages">0</div><div class="kpi-label">Messages Sent</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpi-tabs">0</div><div class="kpi-label">Tab Switches</div></div>
+        <div class="kpi"><div class="kpi-value" id="kpi-adaptations">0</div><div class="kpi-label">Adaptations Made</div></div>
+      </div>
+      <div style="margin-top:1rem;padding:.75rem;background:var(--bg);border-radius:var(--radius);font-size:.82rem;color:var(--sub);">
+        <strong style="color:var(--text);">How adaptation works:</strong><br><br>
+        AdaptUI continuously monitors user interactions — clicks, chat usage, scroll depth, and tab switching. A lightweight behaviour classifier runs client-side and updates your profile (Novice → Explorer → Power User → Expert) in real time. When a threshold is reached, the interface applies adaptive changes such as toggling dark mode, surfacing advanced features, or restructuring the layout.
+      </div>
+    </div>
+
+    <!-- Suggestions tab -->
+    <div class="card tab-panel" id="tab-suggestions">
+      <h3 style="margin-bottom:.8rem;font-size:.85rem;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;">AI-Generated Personalisation Suggestions</h3>
+      <div id="suggestions-list" style="display:flex;flex-direction:column;gap:.6rem;"></div>
+    </div>
+
+    <!-- About tab -->
+    <div class="card tab-panel" id="tab-about">
+      <h3 style="margin-bottom:.6rem;">About AdaptUI</h3>
+      <p style="font-size:.88rem;line-height:1.7;color:var(--sub);">
+        AdaptUI is a research prototype built for <strong style="color:var(--text);">MSAI-631 – AI for Human-Computer Interaction</strong>
+        at the University of the Cumberlands (Spring 2026). It demonstrates AI-based adaptive UI principles
+        by tracking real-time behavioural signals and dynamically personalising the interface without
+        any manual configuration by the user.
+      </p>
+      <br>
+      <p style="font-size:.88rem;line-height:1.7;color:var(--sub);">
+        Key concepts implemented: <strong style="color:var(--text);">Adaptive User Interfaces (AUI)</strong>,
+        <strong style="color:var(--text);">Intelligent User Interfaces (IUI)</strong>, and
+        <strong style="color:var(--text);">AI-based Adaptive HCI</strong>. The AI assistant uses the
+        Anthropic Claude API to provide context-aware responses that also adjust based on the detected user profile.
+      </p>
+    </div>
+
+  </main>
+
+</div>
+
+<div id="notif"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  clicks: 0,
+  messages: 0,
+  tabSwitches: 0,
+  scrollDepth: 0,
+  adaptations: 0,
+  sessionStart: Date.now(),
+  profile: 'novice',          // novice | explorer | poweruser | expert
+  history: [],                // chat history for context window
+};
+
+const PROFILES = {
+  novice:    { emoji:'🌱', label:'Novice',     desc:'Getting started – simplified layout active',     badge:'Novice User',    threshold:0  },
+  explorer:  { emoji:'🔍', label:'Explorer',   desc:'Curious learner – extra tips surfaced',          badge:'Explorer',       threshold:10 },
+  poweruser: { emoji:'⚡', label:'Power User', desc:'Frequent user – compact layout applied',         badge:'Power User',     threshold:25 },
+  expert:    { emoji:'🏆', label:'Expert',     desc:'High engagement – advanced features unlocked',   badge:'Expert',         threshold:50 },
+};
+
+// ── Behaviour tracking ─────────────────────────────────────────────────────
+document.addEventListener('click', () => {
+  state.clicks++;
+  updateMetrics();
+  checkProfile();
+});
+
+document.addEventListener('scroll', () => {
+  const d = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight || 1)) * 100);
+  state.scrollDepth = Math.max(state.scrollDepth, d || 0);
+  updateMetrics();
+});
+
+// Session timer
+setInterval(() => {
+  const secs = Math.floor((Date.now() - state.sessionStart) / 1000);
+  document.getElementById('session-time').textContent =
+    `Session: ${secs < 60 ? secs+'s' : Math.floor(secs/60)+'m '+secs%60+'s'}`;
+}, 1000);
+
+// ── Metrics refresh ────────────────────────────────────────────────────────
+function updateMetrics() {
+  document.getElementById('kpi-clicks').textContent     = state.clicks;
+  document.getElementById('kpi-messages').textContent   = state.messages;
+  document.getElementById('kpi-tabs').textContent       = state.tabSwitches;
+  document.getElementById('kpi-adaptations').textContent= state.adaptations;
+
+  const total = state.clicks + state.messages * 3 + state.tabSwitches * 2;
+  const cp = Math.min(100, Math.round((state.clicks / (total || 1)) * 100));
+  const mp = Math.min(100, Math.round((state.messages * 3 / (total || 1)) * 100));
+  const tp = Math.min(100, Math.round((state.tabSwitches * 2 / (total || 1)) * 100));
+  const sp = Math.min(100, state.scrollDepth);
+
+  setBar('click', cp);
+  setBar('chat', mp);
+  setBar('tab', tp);
+  setBar('scroll', sp);
+}
+
+function setBar(id, pct) {
+  document.getElementById(id+'-pct').textContent = pct+'%';
+  document.getElementById(id+'-bar').style.width  = pct+'%';
+}
+
+// ── Profile classifier ─────────────────────────────────────────────────────
+function engagementScore() {
+  return state.clicks + state.messages * 3 + state.tabSwitches * 2;
+}
+
+function checkProfile() {
+  const score = engagementScore();
+  let next = 'novice';
+  if (score >= PROFILES.expert.threshold)    next = 'expert';
+  else if (score >= PROFILES.poweruser.threshold) next = 'poweruser';
+  else if (score >= PROFILES.explorer.threshold)  next = 'explorer';
+
+  if (next !== state.profile) {
+    const prev = state.profile;
+    state.profile = next;
+    applyAdaptations(prev, next);
+    updateProfileUI();
+  }
+}
+
+function updateProfileUI() {
+  const p = PROFILES[state.profile];
+  document.getElementById('profile-emoji').textContent = p.emoji;
+  document.getElementById('profile-name').textContent  = p.label;
+  document.getElementById('profile-desc').textContent  = p.desc;
+  document.getElementById('profile-badge').textContent = p.badge;
+  refreshSuggestions();
+}
+
+// ── Adaptive behaviours ────────────────────────────────────────────────────
+const appliedAdaptations = new Set();
+
+function applyAdaptations(prev, next) {
+  state.adaptations++;
+
+  const map = {
+    explorer: () => {
+      if (appliedAdaptations.has('explorer')) return;
+      appliedAdaptations.add('explorer');
+      notify('🔍 Explorer detected – tips and hints enabled!');
+      document.querySelectorAll('[data-hint]').forEach(el => el.style.display = 'block');
+    },
+    poweruser: () => {
+      if (appliedAdaptations.has('poweruser')) return;
+      appliedAdaptations.add('poweruser');
+      notify('⚡ Power User detected – switching to dark mode & compact layout!');
+      if (!document.getElementById('tog-dark').checked) {
+        document.getElementById('tog-dark').click();
+      }
+      document.documentElement.style.setProperty('--spacing', '0.7rem');
+      document.documentElement.style.setProperty('--font-size', '14px');
+    },
+    expert: () => {
+      if (appliedAdaptations.has('expert')) return;
+      appliedAdaptations.add('expert');
+      notify('🏆 Expert unlocked – all advanced features active!');
+      document.documentElement.style.setProperty('--primary', '#7c3aed');
+    },
+  };
+
+  if (map[next]) map[next]();
+}
+
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  state.tabSwitches++;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  updateMetrics();
+  checkProfile();
+}
+
+// ── Theme toggles ──────────────────────────────────────────────────────────
+function toggleDark() {
+  document.body.classList.toggle('dark', document.getElementById('tog-dark').checked);
+  if (document.getElementById('tog-dark').checked) {
+    document.getElementById('tog-hc').checked = false;
+    document.body.classList.remove('high-contrast');
+  }
+}
+function toggleHC() {
+  document.body.classList.toggle('high-contrast', document.getElementById('tog-hc').checked);
+  if (document.getElementById('tog-hc').checked) {
+    document.getElementById('tog-dark').checked = false;
+    document.body.classList.remove('dark');
+  }
+}
+function toggleLT() {
+  document.body.classList.toggle('large-text', document.getElementById('tog-lt').checked);
+}
+
+// ── AI Chat ────────────────────────────────────────────────────────────────
+function appendMsg(role, text) {
+  const box = document.getElementById('chat-box');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+  div.innerHTML = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function typingBubble() {
+  return appendMsg('ai', '<div class="typing"><span></span><span></span><span></span></div>');
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  document.getElementById('send-btn').disabled = true;
+
+  appendMsg('user', escapeHtml(text));
+  state.messages++;
+  updateMetrics();
+  checkProfile();
+
+  const bubble = typingBubble();
+
+  // Build system prompt adapted to current profile
+  const profileLabel = PROFILES[state.profile].label;
+  const sysPrompt = `You are an embedded AI assistant inside AdaptUI, an AI-powered Adaptive User Interface research prototype for MSAI-631 at the University of the Cumberlands. The current user profile is: ${profileLabel}.
+
+Adjust your response style:
+- Novice: simple, encouraging, avoid jargon.
+- Explorer: friendly, curious tone, introduce new concepts gently.
+- Power User: concise, assume familiarity with software, skip basics.
+- Expert: terse, technical, peer-level tone.
+
+Keep responses under 120 words. Be helpful.`;
+
+  state.history.push({ role: 'user', content: text });
+  if (state.history.length > 10) state.history = state.history.slice(-10);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: sysPrompt,
+        messages: state.history,
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+    bubble.innerHTML = escapeHtml(reply);
+    state.history.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    bubble.innerHTML = '⚠️ Could not reach the AI API. Check your connection.';
+  }
+
+  document.getElementById('send-btn').disabled = false;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ── AI Suggestions ─────────────────────────────────────────────────────────
+const ALL_SUGGESTIONS = {
+  novice: [
+    { icon:'💡', title:'Try the AI Chat', desc:'Ask a question to get started. The assistant adapts to your level.' },
+    { icon:'🎨', title:'Explore themes', desc:'Use the sidebar toggles to switch between light, dark, and high-contrast modes.' },
+    { icon:'📊', title:'View your dashboard', desc:'The Dashboard tab shows your live engagement metrics.' },
+  ],
+  explorer: [
+    { icon:'⌨️', title:'Use keyboard shortcut', desc:'Press Enter to send chat messages faster.' },
+    { icon:'🔄', title:'Switch tabs frequently', desc:'Switching tabs boosts your engagement score and unlocks new features.' },
+    { icon:'🌙', title:'Try dark mode', desc:'Dark mode reduces eye strain for longer sessions.' },
+  ],
+  poweruser: [
+    { icon:'📌', title:'Bookmark this app', desc:'Save AdaptUI for quick daily access.' },
+    { icon:'🧩', title:'Combine accessibility modes', desc:'Large text + dark mode works great for extended coding sessions.' },
+    { icon:'📈', title:'Monitor your adaptations', desc:'The Dashboard counts every time the UI adapts to your behaviour.' },
+  ],
+  expert: [
+    { icon:'🔧', title:'Fork the source', desc:'All source code is on GitHub. Extend the adaptation engine yourself.' },
+    { icon:'🤖', title:'Swap the model', desc:'Replace claude-sonnet-4-20250514 in the source to test different LLMs.' },
+    { icon:'📡', title:'Add MCP servers', desc:'Extend the chat agent with Model Context Protocol tool servers.' },
+  ],
+};
+
+function refreshSuggestions() {
+  const list = document.getElementById('suggestions-list');
+  const items = ALL_SUGGESTIONS[state.profile] || ALL_SUGGESTIONS.novice;
+  list.innerHTML = items.map(s => `
+    <div class="suggestion" onclick="notify('Applying: ${s.title}')">
+      <span class="suggestion-icon">${s.icon}</span>
+      <div>
+        <div class="suggestion-title">${s.title}</div>
+        <div class="suggestion-desc">${s.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+refreshSuggestions();
+appendMsg('ai', '👋 Hello! I\'m your adaptive AI assistant. Ask me anything — my responses will adjust as your profile evolves. Try the Dashboard tab to see your live metrics!');
+</script>
+</body>
+</html>
