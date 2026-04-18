@@ -49,7 +49,7 @@ adaptive-ui/
 - **DOM Event API** – zero-dependency behavioural telemetry
 
 ## APA Citation (Source Code)
-[Student Name]. (2026). *AdaptUI: AI-powered adaptive user interface* [Source code].
+[Suresh U]. (2026). *AdaptUI: AI-powered adaptive user interface* [Source code].
 GitHub. [https://github.com/[username]/adaptui-msai631](https://github.com/SuryaSureshUnnam/AI-Based-Adaptive-Human-Computer-Interaction-Building-AdaptUI)
 
 ## AI Tool Disclosure
