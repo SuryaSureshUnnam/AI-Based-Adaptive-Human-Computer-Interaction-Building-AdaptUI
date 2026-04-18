@@ -50,7 +50,7 @@ adaptive-ui/
 
 ## APA Citation (Source Code)
 [Student Name]. (2026). *AdaptUI: AI-powered adaptive user interface* [Source code].
-GitHub. https://github.com/[username]/adaptui-msai631
+GitHub. [https://github.com/[username]/adaptui-msai631](https://github.com/SuryaSureshUnnam/AI-Based-Adaptive-Human-Computer-Interaction-Building-AdaptUI)
 
 ## AI Tool Disclosure
 - **Claude (Anthropic)** – report review and API integration
